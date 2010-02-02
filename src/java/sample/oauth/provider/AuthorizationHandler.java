@@ -173,7 +173,9 @@ public class AuthorizationHandler extends ExtensionHttpHandler {
             PrintWriter out = response.getWriter();
             out.println("You have successfully authorized '" 
                     + accessor.consumer.getProperty("description") 
-                    + "'. Please close this browser window and click continue"
+                    + "'. Your verification code is "
+                    + accessor.getProperty(OAuth.OAUTH_VERIFIER).toString()
+                    + ". Please close this browser window and click continue"
                     + " in the client.");
             out.close();
         } else {

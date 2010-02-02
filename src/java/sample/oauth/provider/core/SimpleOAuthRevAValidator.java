@@ -222,11 +222,11 @@ public class SimpleOAuthRevAValidator implements OAuthValidator {
         String callback = message.getParameter(OAuth.OAUTH_CALLBACK);
         if (callback != null && callback != "") {
         	ZimbraLog.extensions.debug("callback is ready.");
-        	if(callback=="oob"){
+        	//if(callback=="oob"){
         		//oob is not implemented yet	
-        	}else{
+        	//}else{
         		accessor.setProperty(OAuth.OAUTH_CALLBACK, callback);
-        	}
+        	//}
         }else{
         	ZimbraLog.extensions.debug("no callbacks set!");
         	OAuthProblemException problem = new OAuthProblemException("no_callback");

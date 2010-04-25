@@ -74,6 +74,11 @@ public class ZimbraAuthProviderForOAuth extends AuthProvider{
     protected AuthToken authToken(HttpServletRequest req, boolean isAdminReq) throws AuthProviderException, AuthTokenException {
         
     	ZimbraLog.extensions.debug("authToken(HttpServletRequest req, boolean isAdminReq) is requested.");
+    	if(isAdminReq){
+    		ZimbraLog.extensions.debug("isAdminReq"+isAdminReq);
+        	return null;
+    	}
+    	
     	//String cookieName = cookieName(isAdminReq);
         String encodedAuthToken = null;
         //javax.servlet.http.Cookie cookies[] =  req.getCookies();
@@ -88,6 +93,10 @@ public class ZimbraAuthProviderForOAuth extends AuthProvider{
         try{
         OAuthMessage requestMessage = OAuthServlet.getMessage(req, null);
         
+        if(requestMessage.getToken() == null){
+        	ZimbraLog.extensions.debug("no need for further oauth procesing");
+        	return null;
+        }
         OAuthAccessor accessor = SampleZmOAuthProvider.getAccessor(requestMessage);
         SampleZmOAuthProvider.VALIDATOR.validateMessage(requestMessage, accessor);
         

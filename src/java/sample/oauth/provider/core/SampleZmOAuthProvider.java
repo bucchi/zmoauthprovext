@@ -62,7 +62,11 @@ import net.oauth.OAuth;
 import com.zimbra.common.localconfig.LC;
 import com.zimbra.common.util.ZimbraLog;
 
+
 import sample.oauth.provider.core.SimpleOAuthRevAValidator;
+import sample.oauth.provider.OAuthTokenCache;
+import sample.oauth.provider.OAuthTokenCacheKey;
+import com.zimbra.common.service.ServiceException;
 
 /**
  * Utility methods for providers that store consumers, tokens and secrets in 
@@ -75,11 +79,12 @@ public class SampleZmOAuthProvider {
 
     public static final SimpleOAuthRevAValidator VALIDATOR = new SimpleOAuthRevAValidator();
 
-    private static final Map<String, OAuthConsumer> ALL_CONSUMERS 
-                    = Collections.synchronizedMap(new HashMap<String,OAuthConsumer>(10));
+    //private static final Map<String, OAuthConsumer> ALL_CONSUMERS 
+    //                = Collections.synchronizedMap(new HashMap<String,OAuthConsumer>(10));
     
     private static final Collection<OAuthAccessor> ALL_TOKENS = new HashSet<OAuthAccessor>();
 
+    
     public static synchronized OAuthConsumer getConsumer(
             OAuthMessage requestMessage)
             throws IOException, OAuthProblemException {
@@ -105,27 +110,56 @@ public class SampleZmOAuthProvider {
         return consumer;
     }
     
+    public static synchronized OAuthConsumer getConsumer(
+            String consumer_key)
+            throws IOException, OAuthProblemException {
+        
+        OAuthConsumer consumer = null;
+        // try to load from local cache if not throw exception
+        
+        //get the Consumer Key, Secret ,Callback URL from localconfig
+        if(LC.get("oauth_consumerKey_"+consumer_key) == null) {
+            OAuthProblemException problem = new OAuthProblemException("token_rejected");
+            throw problem;
+        }
+        consumer = new OAuthConsumer(
+        		null, 
+                LC.get("oauth_consumerKey_"+consumer_key), 
+                LC.get("oauth_consumerSecret_"+consumer_key), 
+                null);
+        consumer.setProperty("name", consumer_key);
+        consumer.setProperty("description", LC.get("oauth_consumerDescription_"+consumer_key));
+        
+        
+        return consumer;
+    }
+    
     /**
      * Get the access token and token secret for the given oauth_token. 
      */
     public static synchronized OAuthAccessor getAccessor(OAuthMessage requestMessage)
-            throws IOException, OAuthProblemException {
+            throws IOException, OAuthProblemException,ServiceException {
         
-        // try to load from local cache if not throw exception
+        // try to load from memcache if not throw exception
         String consumer_token = requestMessage.getToken();
         OAuthAccessor accessor = null;
-        for (OAuthAccessor a : SampleZmOAuthProvider.ALL_TOKENS) {
-            if(a.requestToken != null) {
-                if (a.requestToken.equals(consumer_token)) {
-                    accessor = a;
-                    break;
-                }
-            } else if(a.accessToken != null){
-                if (a.accessToken.equals(consumer_token)) {
-                    accessor = a;
-                    break;
-                }
-            }
+        //for (OAuthAccessor a : SampleZmOAuthProvider.ALL_TOKENS) {
+        //    if(a.requestToken != null) {
+        //        if (a.requestToken.equals(consumer_token)) {
+        //            accessor = a;
+        //            break;
+        //        }
+        //    } else if(a.accessToken != null){
+        //        if (a.accessToken.equals(consumer_token)) {
+        //            accessor = a;
+        //            break;
+        //        }
+        //    }
+        //}
+        
+        accessor = OAuthTokenCache.get(consumer_token, OAuthTokenCache.REQUEST_TOKEN_TYPE);
+        if (accessor == null){
+        	accessor = OAuthTokenCache.get(consumer_token, OAuthTokenCache.ACCESS_TOKEN_TYPE);
         }
         
         if(accessor == null){
@@ -144,13 +178,16 @@ public class SampleZmOAuthProvider {
         
         
         // first remove the accessor from cache
-        ALL_TOKENS.remove(accessor);
+        //ALL_TOKENS.remove(accessor);
         
         accessor.setProperty("user", userId);   
         accessor.setProperty("authorized", Boolean.TRUE);
         accessor.setProperty("ZM_AUTH_TOKEN", zauthtoken);
         // update token in local cache
-        ALL_TOKENS.add(accessor);
+        //ALL_TOKENS.add(accessor);
+        
+        // add to memcache
+        //OAuthTokenCache.put(accessor,"REQ");
     }
     
 
@@ -161,7 +198,7 @@ public class SampleZmOAuthProvider {
      */
     public static synchronized void generateRequestToken(
             OAuthAccessor accessor)
-            throws OAuthException {
+            throws OAuthException,ServiceException {
 
         // generate oauth_token and oauth_secret
         String consumer_key = (String) accessor.consumer.getProperty("name");
@@ -179,7 +216,10 @@ public class SampleZmOAuthProvider {
         accessor.accessToken = null;
         
         // add to the local cache
-        ALL_TOKENS.add(accessor);
+        //ALL_TOKENS.add(accessor);
+        
+        // add to memcache
+        OAuthTokenCache.put(accessor,OAuthTokenCache.REQUEST_TOKEN_TYPE);
         
     }
     
@@ -189,7 +229,7 @@ public class SampleZmOAuthProvider {
      * @throws OAuthException
      */
     public static synchronized void generateAccessToken(OAuthAccessor accessor)
-            throws OAuthException {
+            throws OAuthException,ServiceException {
 
         // generate oauth_token and oauth_secret
         String consumer_key = (String) accessor.consumer.getProperty("name");
@@ -199,13 +239,16 @@ public class SampleZmOAuthProvider {
         String token_data = consumer_key + System.nanoTime();
         String token = DigestUtils.md5Hex(token_data);
         // first remove the accessor from cache
-        ALL_TOKENS.remove(accessor);
+        //ALL_TOKENS.remove(accessor);
         
-        accessor.requestToken = null;
+        //accessor.requestToken = null;
         accessor.accessToken = token;
         
         // update token in local cache
-        ALL_TOKENS.add(accessor);
+        //ALL_TOKENS.add(accessor);
+        
+        // add to memcache
+        OAuthTokenCache.put(accessor,OAuthTokenCache.ACCESS_TOKEN_TYPE);
     }
 
     public static void handleException(Exception e, HttpServletRequest request,
@@ -223,7 +266,7 @@ public class SampleZmOAuthProvider {
      */
     public static synchronized void generateVerifier(
             OAuthAccessor accessor)
-            throws OAuthException {
+            throws OAuthException,ServiceException {
 
         // generate oauth_verifier
         String consumer_key = (String) accessor.consumer.getProperty("name");
@@ -239,6 +282,9 @@ public class SampleZmOAuthProvider {
         
         // add to the local cache
         //ALL_TOKENS.add(accessor);
+        
+        // add to memcache
+        OAuthTokenCache.put(accessor,OAuthTokenCache.REQUEST_TOKEN_TYPE);
         
     }
 

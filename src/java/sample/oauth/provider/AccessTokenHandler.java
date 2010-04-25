@@ -98,7 +98,8 @@ public class AccessTokenHandler extends ExtensionHttpHandler {
             // make sure token is authorized
             if (!Boolean.TRUE.equals(accessor.getProperty("authorized"))) {
                  OAuthProblemException problem = new OAuthProblemException("permission_denied");
-                throw problem;
+                 ZimbraLog.extensions.debug("permission_denied");
+                 throw problem;
             }
             // generate access token and secret
             SampleZmOAuthProvider.generateAccessToken(accessor);

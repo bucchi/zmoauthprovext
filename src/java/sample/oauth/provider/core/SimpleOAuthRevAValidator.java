@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Yutaka Obuchi
+ * Copyright 2009,2010 Yutaka Obuchi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,10 +121,15 @@ public class SimpleOAuthRevAValidator implements OAuthValidator {
     public void validateAccTokenMessage(OAuthMessage message, OAuthAccessor accessor)
     throws OAuthException, IOException, URISyntaxException {
         checkSingleParameters(message);
+        ZimbraLog.extensions.debug("validateAccToken:checkShingle done.");
         validateVersion(message);
+        ZimbraLog.extensions.debug("validateAccToken:validateVersion done.");
         validateTimestampAndNonce(message);
+        ZimbraLog.extensions.debug("validateAccToken:validateTimestamp done.");
         validateSignature(message, accessor);
+        ZimbraLog.extensions.debug("validateAccToken:validateSignature done.");
         validateVerifier(message, accessor);
+        ZimbraLog.extensions.debug("validateAccToken:validateVerifier done.");
     }
     public void validateReqTokenMessage(OAuthMessage message, OAuthAccessor accessor)
     throws OAuthException, IOException, URISyntaxException {

@@ -35,7 +35,9 @@ Limitation:
 -----------
 
 #1,OAuth OOB mode is not supported yet.
+=> It is supported.(from v0.2)
 #2,for single store server environment only
+=> You can deploy this to multiple store server environment.(from v0.3)
 #3,http request with oauth access token is accessible to all zimbra http api(SOAP,REST,,)
 so consumer can get ZM_AUTH_TOKEN with oauth access token 
 by using some api like SOAP AuthRequest, which I think could leads to security issue.
